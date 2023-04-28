@@ -5,18 +5,12 @@ import sys
 import threading
 import traceback
 
-import boto3
 from moto.core import BaseModel
 from moto.core.base_backend import InstanceTrackerMeta
 
 from localstack import config, constants
-from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import (
-    AWS_REGION_US_EAST_1,
-    ENV_DEV,
-    LOCALSTACK_INFRA_PROCESS,
-)
 from localstack.http.duplex_socket import enable_duplex_socket
+from localstack.constants import AWS_REGION_US_EAST_1, ENV_DEV, LOCALSTACK_INFRA_PROCESS
 from localstack.runtime import events, hooks
 from localstack.runtime.exceptions import LocalstackExit
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
@@ -184,15 +178,6 @@ def log_startup_message(service):
     LOG.info("Starting mock %s service on %s ...", service, gateway_listen_ports_info())
 
 
-def check_aws_credentials():
-    # Setup AWS environment vars, these are used by Boto when LocalStack makes internal cross-service calls
-    os.environ["AWS_ACCESS_KEY_ID"] = get_aws_account_id()
-    os.environ["AWS_SECRET_ACCESS_KEY"] = constants.INTERNAL_AWS_SECRET_ACCESS_KEY
-    session = boto3.Session()
-    credentials = session.get_credentials()
-    assert credentials
-
-
 def signal_supervisor_restart():
     if pid := os.environ.get("SUPERVISOR_PID"):
         os.kill(int(pid), signal.SIGUSR1)
@@ -306,8 +291,6 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         os.environ["AWS_REGION"] = AWS_REGION_US_EAST_1
         os.environ["ENV"] = ENV_DEV
 
-        # make sure AWS credentials are configured, otherwise boto3 bails on us
-        check_aws_credentials()
         patch_moto_request_handling()
 
     @log_duration()
