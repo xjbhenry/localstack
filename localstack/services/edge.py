@@ -7,9 +7,7 @@ from typing import List, Optional, TypeVar
 
 from localstack import config, constants
 from localstack.config import HostAndPort
-from localstack.constants import (
-    LOCALSTACK_ROOT_FOLDER,
-)
+from localstack.constants import LOCALSTACK_ROOT_FOLDER
 from localstack.http import Router
 from localstack.http.dispatcher import Handler, handler_dispatcher
 from localstack.utils.collections import split_list_by
