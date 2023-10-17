@@ -8,7 +8,6 @@ import traceback
 from typing import Dict, List, Union
 
 import boto3
-from localstack_client.config import get_service_port
 from moto.core import BaseModel
 from moto.core.base_backend import InstanceTrackerMeta
 
@@ -248,7 +247,7 @@ def start_moto_server_separate(key, port, name=None, backend_port=None, asynchro
 
 
 def add_service_proxy_listener(api: str, listener: ProxyListener, port=None):
-    PROXY_LISTENERS[api] = (api, port or get_service_port(api), listener)
+    PROXY_LISTENERS[api] = (api, port or config.GATEWAY_LISTEN[0].port, listener)
 
 
 def start_local_api(name, port, api, method, asynchronous=False, listener=None):
