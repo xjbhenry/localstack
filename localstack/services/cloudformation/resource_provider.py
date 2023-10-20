@@ -131,6 +131,8 @@ PROVIDER_DEFAULTS = {
     "AWS::SSM::MaintenanceWindowTarget": "ResourceProvider",
     "AWS::SSM::MaintenanceWindowTask": "ResourceProvider",
     "AWS::SSM::PatchBaseline": "ResourceProvider",
+    "AWS::EC2::TransitGateway": "ResourceProvider",
+    "AWS::EC2::TransitGatewayAttachment": "ResourceProvider",
 }
 
 
