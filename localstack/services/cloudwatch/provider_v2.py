@@ -33,7 +33,7 @@ from localstack.aws.api.cloudwatch import (
     Namespace,
     NextToken,
     ScanBy,
-    Timestamp,
+    Timestamp, ListMetricsOutput, DimensionFilters, MetricName, RecentlyActive, IncludeLinkedAccounts, AccountId,
 )
 from localstack.aws.api import RequestContext
 from localstack.http import Request
@@ -280,3 +280,34 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     ) -> TagResourceOutput:
         self.tags.tag_resource(resource_arn, tags)
         return TagResourceOutput()
+
+    def list_metrics(
+        self,
+        context: RequestContext,
+        namespace: Namespace = None,
+        metric_name: MetricName = None,
+        dimensions: DimensionFilters = None,
+        next_token: NextToken = None,
+        recently_active: RecentlyActive = None,
+        include_linked_accounts: IncludeLinkedAccounts = None,
+        owning_account: AccountId = None,
+    ) -> ListMetricsOutput:
+        result = self.cloudwatch_database.list_metrics(
+            context.account_id,
+            context.region,
+            namespace,
+            metric_name,
+            dimensions,
+        )
+
+        metrics = []
+        for metric in result.get("metrics"):
+            metrics.append(
+                {
+                    "Namespace": metric.get("namespace"),
+                    "MetricName": metric.get("metric_name"),
+                    "Dimensions": metric.get("dimensions"),
+                }
+            )
+
+        return ListMetricsOutput(Metrics=metrics, NextToken=None)
