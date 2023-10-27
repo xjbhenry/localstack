@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import NamedTuple, Optional
 
 import pytest
 from _pytest.config import Config
@@ -83,3 +83,19 @@ def infrastructure_setup(cdk_template_path, aws_client):
         )
 
     return _infrastructure_setup
+
+
+class CaptureKey(NamedTuple):
+    module: str
+    cls: str
+    function: str
+
+
+@pytest.fixture(autouse=True)
+def capture_resources(request: pytest.FixtureRequest):
+    from localstack.aws.handlers import capture_test_resource_lifetimes
+
+    test_key = CaptureKey(request.module.__file__, request.cls.__name__, request.function.__name__)
+
+    with capture_test_resource_lifetimes.capture(test_key) as capturer:
+        yield capturer
