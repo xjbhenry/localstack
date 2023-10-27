@@ -85,15 +85,14 @@ class TestResourceLifetimesCapture:
         self.db.add(self.current_test_key, self.results[self.current_test_key])
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
+        if not context.service or not context.operation:
+            return
+
         service = context.service.service_name
         operation = context.operation.name
 
         # not in a test context
         if self.current_test_key is None:
-            return
-
-        # ???
-        if not service or not operation:
             return
 
         LOG.warning("*** capturing call %s.%s", service, operation)
