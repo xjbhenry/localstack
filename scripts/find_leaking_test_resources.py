@@ -42,6 +42,10 @@ METHOD_PAIRS = {
         "create": ["CreateBucket"],
         "delete": ["DeleteBucket"],
     },
+    "stepfunctions": {
+        "create": ["CreateStateMachine"],
+        "delete": ["DeleteStateMachine"],
+    },
 }
 
 if __name__ == "__main__":
