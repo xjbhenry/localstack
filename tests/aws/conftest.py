@@ -1,8 +1,10 @@
+import logging
 import os
 from typing import NamedTuple, Optional
 
 import pytest
 from _pytest.config import Config
+from _pytest.reports import TestReport
 
 from localstack import config as localstack_config
 from localstack import constants
@@ -10,6 +12,8 @@ from localstack.testing.scenario.provisioning import InfraProvisioner
 from tests.aws.services.es.test_es import install_async as es_install_async
 from tests.aws.services.opensearch.test_opensearch import install_async as opensearch_install_async
 from tests.aws.test_terraform import TestTerraform
+
+LOG = logging.getLogger(__name__)
 
 
 def pytest_configure(config: Config):
@@ -91,11 +95,21 @@ class CaptureKey(NamedTuple):
     function: str
 
 
-@pytest.fixture(autouse=True)
-def capture_resources(request: pytest.FixtureRequest):
+# capture test information
+def pytest_runtest_logstart(nodeid: str, location: tuple[str, int | None, str]):
     from localstack.aws.handlers import capture_test_resource_lifetimes
 
-    test_key = CaptureKey(request.module.__file__, request.cls.__name__, request.function.__name__)
+    test_key = nodeid
+    capture_test_resource_lifetimes.set_test(test_key)
 
-    with capture_test_resource_lifetimes.capture(test_key) as capturer:
-        yield capturer
+
+def pytest_runtest_logreport(report: TestReport):
+    from localstack.aws.handlers import capture_test_resource_lifetimes
+
+    capture_test_resource_lifetimes.last_report = report
+
+
+def pytest_runtest_logfinish(nodeid: str, location: tuple[str, int | None, str]):
+    from localstack.aws.handlers import capture_test_resource_lifetimes
+
+    capture_test_resource_lifetimes.end_test()
