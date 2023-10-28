@@ -10,14 +10,38 @@ from localstack.utils.bootstrap import setup_logging
 
 LOG = logging.getLogger("find_leaking_test_resources")
 
+# TODO: be more sophisticated about pair matching, e.g. a CreateKey should be followed by a DeleteKey, a CancelKeyDeletion should be followed by a DeleteKey
 METHOD_PAIRS = {
     "kms": {
         "create": [
             "CreateKey",
+            "ReplicateKey",
+            "CancelKeyDeletion",
         ],
         "delete": [
             "ScheduleKeyDeletion",
         ],
+    },
+    "dynamodb": {
+        "create": ["CreateTable"],
+        "delete": ["DeleteTable"],
+    },
+    "kinesis": {
+        "create": ["CreateStream"],
+        "delete": ["DeleteStream"],
+    },
+    "opensearch": {
+        "create": ["CreateDomain"],
+        # "delete": ["DeleteDomain"],
+        "delete": [],
+    },
+    "cloudformation": {
+        "create": ["CreateStack"],
+        "delete": [],
+    },
+    "s3": {
+        "create": ["CreateBucket"],
+        "delete": [],
     },
 }
 
@@ -30,6 +54,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     test_report = defaultdict(dict)
+    missing_services = set()
+
     with sqlite3.connect(args.db) as conn:
         cursor = conn.cursor()
         cursor.execute("select test_key, api_calls from api_calls")
@@ -38,18 +64,20 @@ if __name__ == "__main__":
             LOG.debug("test: %s", test_key)
             api_calls = json.loads(api_calls_raw)
 
-            services = set(service for (service, operation) in api_calls)
+            services = set(service for (service, operation, _) in api_calls)
             for tested_service in services:
                 # skip services where we have not yet defined the method pairs
                 if tested_service not in METHOD_PAIRS:
-                    LOG.debug("service %s not defined", tested_service)
+                    if tested_service not in missing_services:
+                        LOG.warning("service %s not defined", tested_service)
+                        missing_services.add(tested_service)
                     continue
 
                 LOG.debug("testing %s", tested_service)
                 called_methods = [
                     (service, operation)
-                    for (service, operation) in api_calls
-                    if service == tested_service
+                    for (service, operation, status_code) in api_calls
+                    if service == tested_service and status_code < 400
                 ]
 
                 service_methods = METHOD_PAIRS[tested_service]
@@ -69,16 +97,16 @@ if __name__ == "__main__":
                     ]
                 )
 
-                if created_score > deleted_score:
-                    report_message = "not enough deletes"
-                elif created_score < deleted_score:
-                    report_message = "too many deletes"
-                else:
+                if created_score == deleted_score:
                     continue
+
+                outcome = (
+                    "not enough deletes" if created_score > deleted_score else "too many deletes"
+                )
 
                 operations = [operation for (_, operation) in called_methods]
                 test_report[test_key][tested_service] = {
-                    "outcome": report_message,
+                    "outcome": outcome,
                     "operations": [operation for (_, operation) in called_methods],
                 }
 
@@ -86,7 +114,7 @@ if __name__ == "__main__":
                     "test %s has unbalanced resource creation with %s operations; %s: %s",
                     test_key,
                     tested_service,
-                    report_message,
+                    outcome,
                     operations,
                 )
 

@@ -17,7 +17,8 @@ LOG = logging.getLogger(__name__)
 # TODO: unify this with the type in the pytest plugin
 TestKey = str
 
-Call = tuple[str, str]
+# service, operation, status code
+Call = tuple[str, str, int]
 
 
 class Database:
@@ -91,4 +92,4 @@ class TestResourceLifetimesCapture:
         if self.current_test_key is None:
             return
 
-        self.results[self.current_test_key].append((service, operation))
+        self.results[self.current_test_key].append((service, operation, response.status_code))
