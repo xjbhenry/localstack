@@ -32,16 +32,15 @@ METHOD_PAIRS = {
     },
     "opensearch": {
         "create": ["CreateDomain"],
-        # "delete": ["DeleteDomain"],
-        "delete": [],
+        "delete": ["DeleteDomain"],
     },
     "cloudformation": {
-        "create": ["CreateStack"],
-        "delete": [],
+        "create": ["CreateStack", "CreateChangeSet"],
+        "delete": ["DeleteStack", "DeleteChangeSet"],
     },
     "s3": {
         "create": ["CreateBucket"],
-        "delete": [],
+        "delete": ["DeleteBucket"],
     },
 }
 
@@ -98,6 +97,13 @@ if __name__ == "__main__":
                 )
 
                 if created_score == deleted_score:
+                    continue
+
+                # special cases
+
+                # cloudformation: DeleteStack is idempotent, so it may be called multiple times.
+                if tested_service == "cloudformation" and created_score < deleted_score:
+                    LOG.debug("cloudformation may perform multiple deletes")
                     continue
 
                 outcome = (
