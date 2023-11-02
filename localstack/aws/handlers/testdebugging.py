@@ -79,6 +79,9 @@ class TestResourceLifetimesCapture:
         self.current_test_key = None
 
     def commit(self):
+        if not self.current_test_key:
+            # XXX this can not happen, but this makes the typechecker happy
+            return
         self.db.add(self.current_test_key, self.results[self.current_test_key])
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
