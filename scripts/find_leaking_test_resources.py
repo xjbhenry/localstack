@@ -42,6 +42,10 @@ METHOD_PAIRS = {
         "create": ["CreateBucket"],
         "delete": ["DeleteBucket"],
     },
+    "sns": {
+        "create": ["CreateTopic"],
+        "delete": ["DeleteTopic"],
+    },
     "stepfunctions": {
         "create": ["CreateStateMachine"],
         "delete": ["DeleteStateMachine"],
