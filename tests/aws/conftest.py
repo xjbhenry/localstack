@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import NamedTuple, Optional
+from typing import Optional
 
 import pytest
 from _pytest.config import Config
@@ -89,18 +89,11 @@ def infrastructure_setup(cdk_template_path, aws_client):
     return _infrastructure_setup
 
 
-class CaptureKey(NamedTuple):
-    module: str
-    cls: str
-    function: str
-
-
 # capture test information
 def pytest_runtest_logstart(nodeid: str, location: tuple[str, int | None, str]):
     from localstack.aws.handlers import capture_test_resource_lifetimes
 
-    test_key = nodeid
-    capture_test_resource_lifetimes.set_test(test_key)
+    capture_test_resource_lifetimes.set_test(nodeid)
 
 
 def pytest_runtest_logreport(report: TestReport):
