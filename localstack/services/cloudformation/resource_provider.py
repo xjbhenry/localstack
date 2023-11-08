@@ -81,6 +81,8 @@ PROVIDER_DEFAULTS = {
     "AWS::EC2::SecurityGroup": "ResourceProvider",
     "AWS::EC2::Subnet": "ResourceProvider",
     "AWS::EC2::SubnetRouteTableAssociation": "ResourceProvider",
+    "AWS::EC2::TransitGateway": "ResourceProvider",
+    "AWS::EC2::TransitGatewayAttachment": "ResourceProvider",
     "AWS::EC2::VPC": "ResourceProvider",
     "AWS::EC2::VPCGatewayAttachment": "ResourceProvider",
     "AWS::ECR::Repository": "ResourceProvider",
@@ -131,8 +133,8 @@ PROVIDER_DEFAULTS = {
     "AWS::SSM::MaintenanceWindowTarget": "ResourceProvider",
     "AWS::SSM::MaintenanceWindowTask": "ResourceProvider",
     "AWS::SSM::PatchBaseline": "ResourceProvider",
-    "AWS::EC2::TransitGateway": "ResourceProvider",
-    "AWS::EC2::TransitGatewayAttachment": "ResourceProvider",
+    "AWS::StepFunctions::Activity": "ResourceProvider",
+    "AWS::StepFunctions::StateMachine": "ResourceProvider",
 }
 
 
