@@ -3,6 +3,7 @@ from typing import List
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudwatch import (
+    AccountId,
     ActionPrefix,
     AlarmName,
     AlarmNamePrefix,
@@ -11,40 +12,41 @@ from localstack.aws.api.cloudwatch import (
     AmazonResourceName,
     CloudwatchApi,
     DescribeAlarmsOutput,
-    InvalidParameterValueException,
-    ListTagsForResourceOutput,
-    MaxRecords,
-    NextToken,
-    PutMetricAlarmInput,
-    StateValue,
-    TagKeyList,
-    TagList,
-    TagResourceOutput,
-    UntagResourceOutput,
-    AlarmNames,
-    CloudwatchApi,
+    DimensionFilters,
     GetMetricDataMaxDatapoints,
     GetMetricDataOutput,
+    IncludeLinkedAccounts,
+    InvalidParameterCombinationException,
+    InvalidParameterValueException,
     LabelOptions,
+    ListMetricsOutput,
+    ListTagsForResourceOutput,
+    MaxRecords,
     MetricData,
     MetricDataQueries,
     MetricDataResultMessages,
     MetricDataResults,
+    MetricName,
     Namespace,
     NextToken,
+    PutMetricAlarmInput,
+    RecentlyActive,
     ScanBy,
-    Timestamp, ListMetricsOutput, DimensionFilters, MetricName, RecentlyActive, IncludeLinkedAccounts, AccountId,
-    InvalidParameterValueException, InvalidParameterCombinationException,
+    StateValue,
+    TagKeyList,
+    TagList,
+    TagResourceOutput,
+    Timestamp,
+    UntagResourceOutput,
 )
-from localstack.aws.api import RequestContext
 from localstack.http import Request
 from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
+from localstack.services.cloudwatch.cloudwatch_database_helper import CloudwatchDatabase
 from localstack.services.cloudwatch.models import (
     CloudWatchStore,
     LocalStackMetricAlarm,
     cloudwatch_stores,
 )
-from localstack.services.cloudwatch.cloudwatch_database_helper import CloudwatchDatabase
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceLifecycleHook
 from localstack.utils.aws import arns
@@ -64,17 +66,19 @@ class ValidationError(CommonServiceException):
         super().__init__("ValidationError", message, 400, True)
 
 
-def _validate_parameters_for_put_metric_data(
-    metric_data: MetricData
-) -> None:
+def _validate_parameters_for_put_metric_data(metric_data: MetricData) -> None:
     for index, metric_item in enumerate(metric_data):
         indexplusone = index + 1
         if metric_item.get("Value") and metric_item.get("Values"):
-            raise InvalidParameterCombinationException(f"The parameters MetricData.member.{indexplusone}.Value and MetricData.member.{indexplusone}.Values are mutually exclusive and you have specified both.")
+            raise InvalidParameterCombinationException(
+                f"The parameters MetricData.member.{indexplusone}.Value and MetricData.member.{indexplusone}.Values are mutually exclusive and you have specified both."
+            )
 
-        if (values:=metric_item.get("Values")) and (counts:=metric_item.get("Counts")):
+        if (values := metric_item.get("Values")) and (counts := metric_item.get("Counts")):
             if len(values) != len(counts):
-                raise InvalidParameterValueException(f"The parameters MetricData.member.{indexplusone}.Values and MetricData.member.{indexplusone}.Counts must be of the same size.")
+                raise InvalidParameterValueException(
+                    f"The parameters MetricData.member.{indexplusone}.Values and MetricData.member.{indexplusone}.Counts must be of the same size."
+                )
 
         # TODO: check for other validations
 
@@ -146,7 +150,6 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     def put_metric_data(
         self, context: RequestContext, namespace: Namespace, metric_data: MetricData
     ) -> None:
-
         _validate_parameters_for_put_metric_data(metric_data)
 
         self.cloudwatch_database.add_metric_data(
