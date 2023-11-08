@@ -1,3 +1,5 @@
+import datetime
+import json
 import logging
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -10,21 +12,26 @@ from localstack.aws.api.cloudwatch import (
     AmazonResourceName,
     CloudwatchApi,
     DescribeAlarmsOutput,
+    HistoryItemType,
     InvalidParameterValueException,
     ListTagsForResourceOutput,
     MaxRecords,
     NextToken,
     PutMetricAlarmInput,
+    StateReason,
+    StateReasonData,
     StateValue,
     TagKeyList,
     TagList,
     TagResourceOutput,
     UntagResourceOutput,
 )
+from localstack.aws.connect import connect_to
 from localstack.http import Request
 from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
 from localstack.services.cloudwatch.models import (
     CloudWatchStore,
+    LocalStackAlarm,
     LocalStackMetricAlarm,
     cloudwatch_stores,
 )
@@ -108,6 +115,61 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         for alarm_name in alarm_names:
             alarm_arn = arns.cloudwatch_alarm_arn(alarm_name)  # obtain alarm ARN from alarm name
             self.alarm_scheduler.delete_scheduler_for_alarm(alarm_arn)
+
+    def set_alarm_state(
+        self,
+        context: RequestContext,
+        alarm_name: AlarmName,
+        state_value: StateValue,
+        state_reason: StateReason,
+        state_reason_data: StateReasonData = None,
+    ) -> None:
+        try:
+            if state_reason_data:
+                state_reason_data = json.loads(state_reason_data)
+        except ValueError:
+            raise InvalidParameterValueException(
+                "TODO: right error message: Json was not correctly formatted"
+            )
+
+        store = self.get_store(context.account_id, context.region)
+        alarm = store.Alarms.get(arns.cloudwatch_alarm_arn(alarm_name))
+        old_state = alarm.alarm["StateValue"]
+        if not alarm:
+            raise InvalidParameterValueException(
+                f"TODO: proper exception: Alarm with name {alarm_name} could not be found"
+            )
+
+        if state_value not in ("OK", "ALARM", "INSUFFICIENT_DATA"):
+            raise ValidationError(
+                f"TODO: right error message: '{state_value}' must be one of INSUFFICIENT_DATA, ALARM, OK"
+            )
+
+        self._update_state(context, alarm, state_value, state_reason, state_reason_data)
+
+        if not alarm.alarm["ActionsEnabled"] or old_state == state_value:
+            return
+        if state_value == "OK":
+            actions = alarm.alarm["OKActions"]
+        elif state_value == "ALARM":
+            actions = alarm.alarm["AlarmActions"]
+        else:
+            actions = alarm.alarm["InsufficientDataActions"]
+        for action in actions:
+            data = arns.parse_arn(action)
+            # test for sns - can this be done in a more generic way?
+            if data["service"] == "sns":
+                service = connect_to.get_client(data["service"])
+                subject = f"""{state_value}: "{alarm_name}" in {context.region}"""
+                message = self.create_message_response_update_state(self, old_state)
+                service.publish(TopicArn=action, Subject=subject, Message=message)
+            else:
+                # TODO: support other actions
+                LOG.warning(
+                    "Action for service %s not implemented, action '%s' will not be triggered.",
+                    data["service"],
+                    action,
+                )
 
     def get_raw_metrics(self, request: Request):
         # TODO this needs to be read from the database
@@ -214,3 +276,88 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     ) -> TagResourceOutput:
         self.tags.tag_resource(resource_arn, tags)
         return TagResourceOutput()
+
+    def _update_state(
+        self,
+        context: RequestContext,
+        alarm: LocalStackAlarm,
+        state_value: str,
+        state_reason: str,
+        state_reason_data: dict = None,
+    ):
+        old_state = alarm.alarm["StateValue"]
+        store = self.get_store(context.account_id, context.region)
+        current_time = datetime.datetime.now()
+        store.Histories.append(
+            {
+                # TODO: check time format
+                "Timestamp": alarm.alarm["StateUpdatedTimestamp"],
+                "HistoryItemType": HistoryItemType.StateUpdate,
+                "AlarmName": alarm.alarm["AlarmName"],
+                "HistoryData": alarm.alarm.get("StateReasonData"),  # FIXME
+                "HistorySummary": f"Alarm updated from {old_state} to {state_value}",
+            }
+        )
+        alarm.alarm["StateValue"] = state_value
+        alarm.alarm["StateReason"] = state_reason
+        alarm.alarm["StateReasonData"] = state_reason_data
+        alarm.alarm["StateUpdatedTimestamp"] = current_time
+
+    @staticmethod
+    def create_message_response_update_state(
+        context: RequestContext, alarm: LocalStackAlarm, old_state
+    ):
+        alarm = alarm.alarm
+        response = {
+            "AWSAccountId": context,
+            "OldStateValue": old_state,
+            "AlarmName": alarm["AlarmName"],
+            "AlarmDescription": alarm.get("AlarmDescription"),
+            "AlarmConfigurationUpdatedTimestamp": alarm["AlarmConfigurationUpdatedTimestamp"],
+            "NewStateValue": alarm["StateValue"],
+            "NewStateReason": alarm["StateReason"],
+            "StateChangeTime": alarm["StateUpdatedTimestamp"],
+            # the long-name for 'region' should be used - as we don't have it, we use the short name
+            # which needs to be slightly changed to make snapshot tests work
+            "Region": context.region.replace("-", " ").capitalize(),
+            "AlarmArn": alarm["AlarmArn"],
+            "OKActions": alarm.get("OKActions", []),
+            "AlarmActions": alarm.get("AlarmActions", []),
+            "InsufficientDataActions": alarm.get("InsufficientDataActions", []),
+        }
+
+        # collect trigger details
+        details = {
+            "MetricName": alarm.get("MetricName", ""),
+            "Namespace": alarm.get("Namespace", ""),
+            "Unit": alarm.get("Unit", ""),
+            "Period": int(alarm.get("Period", 0)),
+            "EvaluationPeriods": int(alarm.get("EvaluationPeriod", 0)),
+            "ComparisonOperator": alarm.get("ComparisonOperator", ""),
+            "Threshold": float(alarm.get("Threshold", 0.0)),
+            "TreatMissingData": alarm.get("TreatMissingData", ""),
+            "EvaluateLowSampleCountPercentile": alarm.get("EvaluateLowSampleCountPercentile", ""),
+        }
+
+        # Dimensions not serializable
+        dimensions = []
+        alarm_dimensions = alarm.get("Dimensions", [])
+        if alarm_dimensions:
+            for d in alarm.dimensions:
+                dimensions.append({"value": d.value, "name": d.name})
+
+        details["Dimensions"] = dimensions or ""
+
+        alarm_statistic = alarm.get("Statistic")
+        alarm_extended_statistic = alarm.get("ExtendedStatistic")
+
+        if alarm_statistic:
+            details["StatisticType"] = "Statistic"
+            details["Statistic"] = alarm_statistic.upper()  # AWS returns uppercase
+        elif alarm_extended_statistic:
+            details["StatisticType"] = "ExtendedStatistic"
+            details["ExtendedStatistic"] = alarm_extended_statistic
+
+        response["Trigger"] = details
+
+        return json.dumps(response)

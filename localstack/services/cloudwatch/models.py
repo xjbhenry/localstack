@@ -1,5 +1,5 @@
 import datetime
-from typing import Dict
+from typing import Dict, List
 
 from moto.cloudwatch.models import CloudWatchBackend as MotoCloudWatchBackend
 from moto.cloudwatch.models import cloudwatch_backends as moto_cloudwatch_backend
@@ -30,6 +30,7 @@ class LocalStackMetricAlarm:
         self.set_default_attributes()
 
     def set_default_attributes(self):
+        # TODO: check timestamp format, moto  has a nanosecond function
         current_time = datetime.datetime.now()
         self.alarm["AlarmArn"] = arns.cloudwatch_alarm_arn(
             self.alarm["AlarmName"], account_id=self.account_id, region_name=self.region
@@ -62,14 +63,20 @@ class LocalStackCompositeAlarm:
         pass
 
 
+LocalStackAlarm = LocalStackMetricAlarm | LocalStackCompositeAlarm
+
+
 class CloudWatchStore(BaseStore):
     # maps resource ARN to tags
     TAGS: Dict[str, Dict[str, str]] = CrossRegionAttribute(default=dict)
 
     # maps resource ARN to alarms
-    Alarms: Dict[str, LocalStackMetricAlarm | LocalStackCompositeAlarm] = LocalAttribute(
-        default=dict
-    )
+    Alarms: Dict[str, LocalStackAlarm] = LocalAttribute(default=dict)
+
+    # Contains all the Alarm Histories. Per documentation, an alarm history is retained even if the alarm is deleted,
+    # making it necessary to save this at store level
+    # TODO: check if list of dicts over all alarm is suitable datastructure
+    Histories: List[Dict] = LocalAttribute(default=list)
 
 
 cloudwatch_stores = AccountRegionBundle("cloudwatch", CloudWatchStore)
