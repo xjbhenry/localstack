@@ -28,6 +28,7 @@ from localstack.aws.api.cloudwatch import (
     MetricData,
     MetricDataQueries,
     MetricDataQuery,
+    MetricDataResult,
     MetricDataResultMessages,
     MetricDataResults,
     MetricName,
@@ -217,7 +218,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 formatted_result["Timestamps"].append(int(timestamp))
                 formatted_result["Values"].append(datapoint_result)
 
-            formatted_results.append(formatted_result)
+            formatted_results.append(MetricDataResult(**formatted_result))
 
         return GetMetricDataOutput(
             MetricDataResults=formatted_results, NextToken=nxt, Messages=messages
