@@ -13,7 +13,7 @@ from functools import wraps
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Union
 
 from localstack import config, constants
-from localstack.config import HostAndPort, default_ip, is_env_true
+from localstack.config import HostAndPort, default_ip, is_env_not_false, is_env_true
 from localstack.runtime import hooks
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
@@ -46,9 +46,9 @@ API_DEPENDENCIES = {
     "dynamodb": ["dynamodbstreams"],
     "dynamodbstreams": ["kinesis"],
     "es": ["opensearch"],
-    "lambda": ["logs", "cloudwatch", "s3", "sqs"],
-    "kinesis": ["dynamodb"],
+    "lambda": ["s3", "sqs", "sts"],
     "firehose": ["kinesis"],
+    "sqs": ["sqs-query"],
 }
 # composites define an abstract name like "serverless" that maps to a set of services
 API_COMPOSITES = {
@@ -232,7 +232,7 @@ def get_enabled_apis() -> Set[str]:
     services_env = os.environ.get("SERVICES", "").strip()
     services = SERVICE_PLUGINS.list_available()
 
-    if services_env and is_env_true("STRICT_SERVICE_LOADING"):
+    if services_env and is_env_not_false("STRICT_SERVICE_LOADING"):
         # SERVICES and STRICT_SERVICE_LOADING are set
         # we filter the result of SERVICE_PLUGINS.list_available() to cross the user-provided list with
         # the available ones
@@ -988,7 +988,7 @@ class LocalstackContainerServer(Server):
     def __init__(
         self, container_configuration: ContainerConfiguration | Container | None = None
     ) -> None:
-        super().__init__(config.EDGE_PORT, config.EDGE_BIND_HOST)
+        super().__init__(config.GATEWAY_LISTEN[0].port, config.GATEWAY_LISTEN[0].host)
 
         if container_configuration is None:
             port_configuration = PortMappings(bind_host=config.GATEWAY_LISTEN[0].host)
