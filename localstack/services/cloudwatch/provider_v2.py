@@ -38,13 +38,16 @@ from localstack.services.cloudwatch.models import (
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceLifecycleHook
 from localstack.utils.aws import arns
+from localstack.utils.json import CustomEncoder as JSONEncoder
 from localstack.utils.sync import poll_condition
 from localstack.utils.tagging import TaggingService
 from localstack.utils.threads import start_worker_thread
+from localstack.utils.time import timestamp_millis
 
 PATH_GET_RAW_METRICS = "/_aws/cloudwatch/metrics/raw"
 DEPRECATED_PATH_GET_RAW_METRICS = "/cloudwatch/metrics/raw"
 MOTO_INITIAL_UNCHECKED_REASON = "Unchecked: Initial alarm creation"
+
 
 LOG = logging.getLogger(__name__)
 
@@ -297,7 +300,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         store.Histories.append(
             {
                 # TODO: check time format
-                "Timestamp": alarm.alarm["StateUpdatedTimestamp"],
+                "Timestamp": timestamp_millis(alarm.alarm["StateUpdatedTimestamp"]),
                 "HistoryItemType": HistoryItemType.StateUpdate,
                 "AlarmName": alarm.alarm["AlarmName"],
                 "HistoryData": alarm.alarm.get("StateReasonData"),  # FIXME
@@ -365,4 +368,20 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
         response["Trigger"] = details
 
-        return json.dumps(response, default=str)
+        return json.dumps(response, cls=JSONEncoder)
+
+    def disable_alarm_actions(self, context: RequestContext, alarm_names: AlarmNames) -> None:
+        self._set_alarm_actions(context, alarm_names, enabled=False)
+
+    def enable_alarm_actions(self, context: RequestContext, alarm_names: AlarmNames) -> None:
+        self._set_alarm_actions(context, alarm_names, enabled=True)
+
+    def _set_alarm_actions(self, context, alarm_names, enabled):
+        store = self.get_store(context.account_id, context.region)
+        for name in alarm_names:
+            alarm_arn = arns.cloudwatch_alarm_arn(
+                name, account_id=context.account_id, region_name=context.region
+            )
+            alarm = store.Alarms.get(alarm_arn)
+            if alarm:
+                alarm.alarm["ActionsEnabled"] = enabled
