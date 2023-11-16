@@ -9,8 +9,8 @@ from moto.core import BaseModel
 from moto.core.base_backend import InstanceTrackerMeta
 
 from localstack import config, constants
-from localstack.http.duplex_socket import enable_duplex_socket
 from localstack.constants import AWS_REGION_US_EAST_1, ENV_DEV, LOCALSTACK_INFRA_PROCESS
+from localstack.http.duplex_socket import enable_duplex_socket
 from localstack.runtime import events, hooks
 from localstack.runtime.exceptions import LocalstackExit
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
