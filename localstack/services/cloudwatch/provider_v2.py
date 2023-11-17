@@ -357,7 +357,16 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             }
             for metric in result.get("metrics", [])
         ]
-        return ListMetricsOutput(Metrics=metrics, NextToken=None)
+
+        limit = 500  # Based on documentation
+        aliases_list = PaginatedList(metrics)
+        page, nxt = aliases_list.get_page(
+            lambda metric_result: metric_result.get("Id"),
+            next_token=next_token,
+            page_size=limit,
+        )
+
+        return ListMetricsOutput(Metrics=page, NextToken=nxt)
 
     def get_metric_statistics(
         self,

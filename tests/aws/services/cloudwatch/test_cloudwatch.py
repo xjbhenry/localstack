@@ -131,7 +131,7 @@ class TestCloudwatch:
             == "The parameters MetricData.member.1.Value and MetricData.member.1.Values are mutually exclusive and you have specified both."
         )
 
-        # test invalid due to data can not have and values mismatched_counts
+        # test invalid due to data can not have values and mismatched_counts
         with pytest.raises(Exception) as ex:
             aws_client.cloudwatch.put_metric_data(
                 Namespace=namespace,
@@ -420,7 +420,7 @@ class TestCloudwatch:
             MetricData=[
                 {
                     "MetricName": "metric1",
-                    "Value": 11,
+                    "Value": 22,
                     "Unit": "Seconds",
                     "Dimensions": [{"Name": "InstanceId", "Value": "two"}],
                     "Timestamp": utc_now,
@@ -446,7 +446,9 @@ class TestCloudwatch:
         )
 
         # Instant querying gets wrong results
-        time.sleep(2)
+        if is_aws_cloud():
+            time.sleep(2)
+
         response = aws_client.cloudwatch.get_metric_data(
             MetricDataQueries=[
                 {

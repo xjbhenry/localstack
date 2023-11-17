@@ -374,7 +374,8 @@ class CloudwatchDatabase:
         dims.sort(key=lambda d: d["Name"])
         dimensions = ""
         for d in dims:
-            dimensions += f"{d['Name']}={d['Value']}\t"  # aws does not allow ascii control characters, we can use it a sa separator
+            # aws does not allow ascii control characters, we can use it as a separator
+            dimensions += f"{d['Name']}={d['Value']}\t"
 
         return dimensions
 
