@@ -108,7 +108,27 @@ def _cbor_blob_parser(value):
 
 @hooks.on_infra_start()
 def _patch_botocore_json_parser():
-    from botocore.parsers import BaseJSONParser
+    from botocore.parsers import BaseJSONParser, RestJSONParser
+
+    @patch(RestJSONParser._handle_integer)
+    def _handle_integer(fn, self, shape, value):
+        """botocore unable to handle empty string conversions, however we're ending up sometimes with some."""
+        if value in ("", None):
+            return None
+        return fn(self, shape, value)
+
+    @patch(BaseJSONParser._handle_structure)
+    def _handle_structure(fn, self, shape, value):
+        """botocore unable to handle empty string conversions to integer, however we're ending up sometimes with some.
+        To remove unnecessary None values we filter the parsed structure."""
+        final_parsed = fn(self, shape, value)
+        match final_parsed:
+            case dict():
+                return dict(filter(lambda item: item[1] is not None, final_parsed.items()))
+            case list():
+                return list(filter(lambda x: x is not None, final_parsed))
+            case _:
+                return final_parsed
 
     @patch(BaseJSONParser._parse_body_as_json)
     def _parse_body_as_json(fn, self, body_contents):
