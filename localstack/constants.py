@@ -72,11 +72,12 @@ LAMBDA_TEST_ROLE = 'arn:aws:iam::%s:role/lambda-test-role' % TEST_AWS_ACCOUNT_ID
 
 # installation constants
 ELASTICSEARCH_URLS = {
+    '7.7.0': 'https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.7.0-linux-aarch64.tar.gz',
     '7.4.0': 'https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.4.0-linux-x86_64.tar.gz',
     '7.1.0': 'https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.1.0-linux-x86_64.tar.gz',
     '6.7.0': 'https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.7.0.zip'
 }
-ELASTICSEARCH_DEFAULT_VERSION = '7.1.0'
+ELASTICSEARCH_DEFAULT_VERSION = '7.7.0'
 # See https://docs.aws.amazon.com/ja_jp/elasticsearch-service/latest/developerguide/aes-supported-plugins.html
 ELASTICSEARCH_PLUGIN_LIST = ['analysis-icu', 'ingest-attachment', 'analysis-kuromoji',
  'mapper-murmur3', 'mapper-size', 'analysis-phonetic', 'analysis-smartcn', 'analysis-stempel', 'analysis-ukrainian']
@@ -85,7 +86,7 @@ ELASTICSEARCH_DELETE_MODULES = ['ingest-geoip']
 ELASTICMQ_JAR_URL = 'https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-0.15.7.jar'
 STS_JAR_URL = 'https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar'
 STEPFUNCTIONS_ZIP_URL = 'https://s3.amazonaws.com/stepfunctionslocal/StepFunctionsLocal.zip'
-KMS_URL_PATTERN = 'https://s3-eu-west-2.amazonaws.com/local-kms/localstack/v3/local-kms.<arch>.bin'
+KMS_URL_PATTERN = 'https://s3-eu-west-2.amazonaws.com/local-kms/3/local-kms_linux-arm64-alpine.bin'
 
 # TODO: Temporarily using a fixed version of DDB in Alpine, as we're hitting a SIGSEGV JVM crash with latest
 DYNAMODB_JAR_URL_ALPINE = 'https://github.com/whummer/dynamodb-local/raw/master/etc/DynamoDBLocal.zip'

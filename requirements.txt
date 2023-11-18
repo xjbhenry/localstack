@@ -1,48 +1,117 @@
-# (1) Lines annotated with "#extended-lib" are excluded
-# from the dependencies when we build the pip package
-
-# (2) Lines annotated with "#basic-lib" are included in the basic
-# version of the pip package (i.e., for "pip install localstack").
-
-# (3) The remaining dependencies (those without markers) are only included in
-# the "full" version of the pip package (i.e., "pip install localstack[full]").
-
-airspeed>=0.5.14
-# Use our "ext" version until this bug is fixed: https://github.com/awslabs/amazon-kinesis-client-python/issues/99
-amazon_kclpy-ext==1.5.1
-# amazon-kclpy==1.5.1
-aws-sam-translator>=1.15.1
-awscli>=1.14.18
-boto>=2.49.0
-boto3>=1.9.71                  #basic-lib
-botocore>=1.12.13
-cachetools>=3.1.1,<4.0.0
+airspeed==0.5.16
+amazon-kclpy-ext==1.5.1
+amazon.ion==0.6.0
+attrs==19.3.0
+aws-sam-translator==1.24.0
+aws-xray-sdk==2.5.0
+awscli==1.18.68
+boto==2.49.0
+boto3==1.13.18
+botocore==1.16.18
+cachetools==3.1.1
+certifi==2020.4.5.1
+cffi==1.14.0
+cfn-lint==0.32.1
+chardet==3.0.4
+click==7.1.2
+colorama==0.4.3
 coverage==4.5.4
-crontab>=0.22.6
-dnspython==1.16.0              #basic-lib
-docopt>=0.6.2                  #basic-lib
-elasticsearch>=7.0.0,<8.0.0
-flake8>=3.6.0                  #extended-lib
-flake8-quotes>=0.11.0          #extended-lib
-flask>=1.0.2
-flask-cors>=3.0.3,<3.1.0
-flask_swagger==0.2.12
+crontab==0.22.6
+cryptography==2.9
+decorator==4.4.2
+dnslib==0.9.12
+dnspython==1.16.0
+docker==4.2.0
+docker-registry-client==0.5.2
+docopt==0.6.2
+docutils==0.15.2
+ecdsa==0.13.3
+elasticsearch==7.7.1
+envs==1.3
+flake8==3.8.2
+flake8-quotes==3.2.0
+Flask==1.1.2
+Flask-Cors==3.0.8
+flask-swagger==0.2.12
 forbiddenfruit==0.1.3
-jsonpatch>=1.24,<2.0
-jsonpath-rw>=1.4.0,<2.0.0
-localstack-ext[full]>=0.11.0
-localstack-ext>=0.11.0         #basic-lib
-localstack-client>=0.14        #basic-lib
-moto-ext>=1.3.15.12
-nose>=1.3.7
-nose-timer>=0.7.5
-psutil>=5.4.8,<6.0.0
-pympler>=0.6
-pyopenssl==17.5.0
-python-coveralls>=2.9.1
-pyyaml>=3.13,<=5.1
-requests>=2.20.0               #basic-lib
+future==0.18.2
+google-auth==1.15.0
+graphql-core==3.1.1
+hbmqtt==0.9.6
+idna==2.9
+importlib-metadata==1.6.0
+itsdangerous==1.1.0
+Jinja2==2.11.2
+jmespath==0.10.0
+jsondiff==1.2.0
+jsonpatch==1.25
+jsonpath-rw==1.4.0
+jsonpickle==1.4.1
+jsonpointer==2.0
+jsonschema==3.2.0
+junit-xml==1.9
+jws==0.1.3
+kubernetes==11.0.0
+localstack-client==0.24
+localstack-ext==0.11.16
+MarkupSafe==1.1.1
+mccabe==0.6.1
+mock==4.0.2
+more-itertools==8.3.0
+moto-ext==1.3.15.16
+networkx==2.4
+nose==1.3.7
+nose-timer==1.0.0
+oauthlib==3.1.0
+passlib==1.7.2
+pg8000==1.15.2
+ply==3.11
+postgres==3.0.0
+presto-python-client==0.7.0
+psutil==5.7.0
+psycopg2-binary==2.8.5
+psycopg2-pool==1.1
+pyaes==1.6.1
+pyasn1==0.4.8
+pyasn1-modules==0.2.8
+pycodestyle==2.6.0
+pycparser==2.20
+pycryptodomex==3.4.9
+pyflakes==2.2.0
+pyftpdlib==1.5.6
+PyHive==0.6.2
+pyion2json==0.0.2
+PyJWT==1.7.1
+Pympler==0.8
+pyOpenSSL==17.5.0
+pyrsistent==0.16.0
+python-coveralls==2.9.3
+python-dateutil==2.8.1
+python-jose==3.1.0
+python-jose-ext==1.3.2.4
+pytz==2020.1
+PyYAML==5.1
+requests==2.23.0
 requests-aws4auth==0.9
-sasl>=0.2.1
-six>=1.12.0                    #basic-lib
-xmltodict>=0.11.0
+requests-oauthlib==1.3.0
+responses==0.10.14
+rsa==3.4.2
+s3transfer==0.3.3
+sasl==0.2.1
+scramp==1.1.1
+six==1.14.0
+srp-ext==1.0.7.1
+sshpubkeys==3.1.0
+testing.common.database==2.0.3
+thrift==0.13.0
+thrift-sasl==0.4.2
+transitions==0.8.1
+urllib3==1.25.9
+warrant-ext==0.6.1.1
+websocket-client==0.57.0
+websockets==8.1
+Werkzeug==1.0.1
+Whoosh==2.7.4
+wrapt==1.12.1
+xmltodict==0.12.0
+zipp==3.1.0

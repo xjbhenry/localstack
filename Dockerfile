@@ -74,6 +74,8 @@ RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
     chown -R localstack:localstack . /tmp/localstack && \
     ln -s `pwd` /tmp/localstack_install_dir
 
+ADD bin/libsqlite4java-linux-aarch64.so /opt/code/localstack/localstack/infra/dynamodb/DynamoDBLocal_lib/libsqlite4java-linux-aarch64.so
+
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
 RUN LAMBDA_EXECUTOR=local make test
